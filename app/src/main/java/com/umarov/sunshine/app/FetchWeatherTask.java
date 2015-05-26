@@ -1,23 +1,13 @@
-/*
- * Copyright (C) 2014 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.umarov.sunshine.app;
 
+/**
+ * Created by muzafar on 5/22/15.
+ */
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
@@ -25,7 +15,9 @@ import android.text.format.Time;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 
+import com.umarov.sunshine.app.data.WeatherContract;
 import com.umarov.sunshine.app.data.WeatherContract.WeatherEntry;
+import com.umarov.sunshine.app.data.WeatherProvider;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -107,9 +99,25 @@ public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
      */
     long addLocation(String locationSetting, String cityName, double lat, double lon) {
         // Students: First, check if the location with this city name exists in the db
+        WeatherProvider weatherProvider = new WeatherProvider();
+        Uri uri = WeatherContract.LocationEntry.CONTENT_URI;
+        String[] projection = { locationSetting };
+
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(WeatherContract.LocationEntry.COLUMN_CITY_NAME, cityName);
+        contentValues.put(WeatherContract.LocationEntry.COLUMN_COORD_LAT, lat);
+        contentValues.put(WeatherContract.LocationEntry.COLUMN_COORD_LONG, lon);
+
+        Cursor cursor = weatherProvider.query(uri, projection, null, null, null);
+        Long id = cursor.getLong(cursor.getColumnIndex("_id"));
+        cursor.close();
+        if (id == 0) {
+            id = ContentUris.parseId(weatherProvider.insert(uri, contentValues));
+        }
+
         // If it exists, return the current ID
         // Otherwise, insert it using the content resolver and the base URI
-        return -1;
+        return id;
     }
 
     /*
